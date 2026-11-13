@@ -31,7 +31,18 @@ from typing import Any, Iterable, Sequence
 
 from ..schema.constraints import ALL_TYPES, OPEN_TYPES
 
-EXCLUDED_FIELDS = frozenset({"source_text", "confidence", "type"})
+#: Fields left out of every comparison.
+#:
+#: `source_text` is a span quote: two labellers disagree about boundaries
+#: without disagreeing about the reading. `note` and `question` are free prose
+#: on the two open categories, and no two people word them alike — scoring
+#: them would mean an `unsupported` constraint could essentially never be
+#: correct, when the thing being tested is whether the writer recognised that
+#: nothing in the vocabulary fits. `confidence` is unused by default, and
+#: `type` is compared separately as the discriminator.
+EXCLUDED_FIELDS = frozenset({
+    "source_text", "confidence", "type", "note", "question",
+})
 
 
 # -- canonical forms -----------------------------------------------------

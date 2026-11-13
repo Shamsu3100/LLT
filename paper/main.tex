@@ -1,0 +1,598 @@
+%% LLM-Assisted Constraint Elicitation for University Timetabling
+%%
+%% Target venue: ACM Transactions on Interactive Intelligent Systems.
+%% Build: latexmk -pdf main.tex
+%%
+%% DRAFT STATUS. Sections that report measurements carry their heading and
+%% nothing else: no study has been run, and a placeholder number in a results
+%% section is how a draft becomes a retraction. Every quantity that will come
+%% from data is wrapped in \result{}, which typesets conspicuously, so no
+%% figure in this file can be mistaken for a finding.
+
+\documentclass[acmsmall,screen,review,anonymous]{acmart}
+
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{listings}
+
+%% Conspicuous placeholder for any quantity that must come from data.
+\newcommand{\result}[1]{\textbf{[\textsc{result}: #1]}}
+%% A section whose content waits on data.
+\newcommand{\awaitingdata}[1]{%
+  \par\noindent\textit{[Awaiting data: #1]}\par}
+
+\settopmatter{printacmref=false}
+\setcopyright{none}
+\acmJournal{TIIS}
+
+\begin{document}
+
+\title{LLM-Assisted Constraint Elicitation for University Timetabling}
+\subtitle{Measuring Staff Time, Residual Error, and Trust}
+
+\author{Anonymous Author(s)}
+\affiliation{%
+  \institution{Anonymous Institution}
+  \country{}
+}
+
+\begin{abstract}
+University timetabling constraints originate as prose: an email saying a
+lecturer cannot teach on Fridays, a note that two courses must not clash, a
+request for a room with workstations. Turning that prose into the formal
+constraints a solver accepts is manual work, and it falls on administrative
+staff. Large language models can perform the translation, and recent
+benchmarks measure how faithfully they do so, but on natural language that was
+generated from templates and scored without anyone in the loop. Whether the
+translation helps the people who would use it is unmeasured.
+
+We report a system in which staff write constraints in their own words, a
+language model maps them onto a closed constraint vocabulary, the staff member
+verifies each proposed constraint, and a solver builds the timetable from what
+they accept. We evaluate it twice. An offline study measures translation
+accuracy against a corpus of staff-authored constraint sentences labelled
+independently by two annotators. A within-subject study with university staff
+compares assisted entry against structured form entry, measuring elicitation
+time with entry and verification timed separately, constraint errors remaining
+after verification, and trust.
+
+Across \result{N} staff and \result{K} labelled sentences, \result{headline
+finding}. We release the labelled corpus, the prompts, the code, and the
+pre-registration.
+\end{abstract}
+
+\begin{CCSXML}
+<ccs2012>
+<concept>
+<concept_id>10003120.10003121.10003129</concept_id>
+<concept_desc>Human-centered computing~Interactive systems and tools</concept_desc>
+<concept_significance>500</concept_significance>
+</concept>
+<concept>
+<concept_id>10010147.10010178.10010187</concept_id>
+<concept_desc>Computing methodologies~Knowledge representation and reasoning</concept_desc>
+<concept_significance>300</concept_significance>
+</concept>
+<concept>
+<concept_id>10003456.10003457.10003527</concept_id>
+<concept_desc>Social and professional topics~Computing education</concept_desc>
+<concept_significance>100</concept_significance>
+</concept>
+</ccs2012>
+\end{CCSXML}
+
+\ccsdesc[500]{Human-centered computing~Interactive systems and tools}
+\ccsdesc[300]{Computing methodologies~Knowledge representation and reasoning}
+\ccsdesc[100]{Social and professional topics~Computing education}
+
+\keywords{constraint elicitation, timetabling, large language models,
+human-in-the-loop verification, constraint programming, user study}
+
+\maketitle
+
+%% =====================================================================
+\section{Introduction}
+%% =====================================================================
+
+A university timetable is the output of a constraint satisfaction problem, and
+most of its constraints begin as sentences. A lecturer writes that she cannot
+teach on Fridays. A programme coordinator notes that two courses fell in the
+same slot last year and that students could not attend both. A technician
+records that a practical needs thirty-eight workstations. Somebody then reads
+these and writes them into whatever form the scheduling system accepts, and
+that somebody is usually an administrator with no background in constraint
+programming.
+
+The translation is the bottleneck, and it is a human one. Solver technology for
+curriculum-based timetabling is mature: the ITC-2007 instances have been
+attacked for close to two decades~\cite{digaspero2007itc}, and a systematic
+review of metaheuristics for course, exam and school timetabling covers the
+last three years alone. What remains expensive is getting the problem stated.
+
+Large language models are an obvious candidate, and the constraint-programming
+community has taken up the idea. CP-Bench measures how well models produce
+constraint models from problem descriptions and names modelling as the
+bottleneck for wider adoption of constraint
+programming~\cite{michailidis2025cpbench}. ConstraintLLM pairs a fine-tuned
+model with solver-checked self-correction~\cite{shi2025constraintllm}.
+SCHEDBench puts scheduling problems, curriculum timetabling among them, to
+thirteen models and finds that none is invariant to how the same problem is
+worded~\cite{sharma2026schedbench}. All three measure the model. None measures
+what happens when a person is the one supplying the words and checking the
+output.
+
+That distinction matters more than it may appear, for two reasons. The first is
+the input. SCHEDBench renders its natural language with a deterministic
+template pipeline, and its own limitations section names broader
+human-authored phrasing as the route to better ecological validity. A model
+that handles templated prose need not handle an email from a lecturer. The
+second is the loop. In any deployment a person has to confirm that the
+formalised constraint says what they meant, and verification is not free: the
+closest timed comparison of a natural-language interface against a manual
+alternative found the interface 31\% faster per query and no more accurate,
+with correct output per hour unchanged, because the time saved on composing
+reappeared on checking~\cite{ipeirotis2026nlidb}. A system evaluated only on
+translation accuracy cannot see that effect at all.
+
+This paper measures it. We built a system in which staff write constraints in
+their own words; a language model maps each sentence onto a closed vocabulary
+of constraint types; a resolver binds the entities named in the sentence to
+the department's own courses, rooms, lecturers and groups; rule-based checks
+flag what needs attention; the staff member accepts, edits or rejects each
+proposed constraint; and a metaheuristic solver builds a timetable from the
+accepted set. The language model never produces or edits a timetable.
+
+Our contributions are:
+
+\begin{itemize}
+  \item A corpus of staff-authored timetabling constraint sentences, labelled
+        independently by two annotators with inter-annotator agreement
+        reported. Existing scheduling benchmarks template their natural
+        language and report no agreement statistic.
+  \item A measurement of translation accuracy on that corpus, decomposed into
+        type, strength and entity accuracy, with entity errors separated into
+        references the system could not resolve and references it resolved to
+        the wrong entity.
+  \item A within-subject study with university staff comparing assisted entry
+        against structured form entry, with elicitation time reported as entry
+        time and verification time separately, constraint errors remaining
+        after verification as a pre-registered non-inferiority check, and
+        trust and usability as secondary measures.
+  \item The system, the prompts, the corpus and the pre-registration, released
+        for reuse.
+\end{itemize}
+
+Section~\ref{sec:study1} reports the offline measurement and
+Section~\ref{sec:study2} the staff study.
+
+%% =====================================================================
+\section{Related Work}
+%% =====================================================================
+
+\subsection{Natural Language to Formal Models}
+
+The line from NL4Opt~\cite{ramamonjison2022nl4opt} through CP-Bench
+\cite{michailidis2025cpbench} and ConstraintLLM~\cite{shi2025constraintllm}
+treats the problem as a translation task scored against reference models. The
+benchmarks have grown more demanding, and later work documents annotation
+errors in the earlier ones, which is part of why we label our corpus twice and
+report agreement.
+
+SCHEDBench~\cite{sharma2026schedbench} is the closest of these to timetabling.
+It covers six scheduling families including curriculum timetabling on the
+ITC-2007 Track 3 instances, and reports that feasibility collapses under
+surface-form variation. Two properties bound what it can tell us. Its natural
+language comes from a deterministic template pipeline with slot filling, so no
+domain user wrote any of it; and it scores end-to-end schedule generation,
+stating that its invariance claims do not isolate effects to the modelling
+stage. Its poor feasibility results are, if anything, an argument for the
+architecture we adopt, in which the model emits constraints and never a
+timetable.
+
+\subsection{Interactive Constraint Acquisition}
+
+Constraint acquisition asks a user questions and learns a constraint network
+from the answers~\cite{bessiere2023partialqueries}. LlmAcq places a language
+model inside that loop, so a user may answer in natural language, and reports a
+large reduction in the number of queries needed~\cite{mechqrane2026llmacq}.
+
+Two features of its evaluation bear on ours. The domains are logic puzzles, not
+scheduling. And the human element is a text-collection exercise: twelve
+students with no constraint-programming background wrote one sentence per
+Sudoku grid, and those 120 sentences were replayed in simulation. No time,
+error rate or trust measurement is reported. Its two substantive findings about
+human feedback shaped our design, and we return to them in
+Section~\ref{sec:resolution}: people do not answer as specifically as an
+algorithm would prefer, and they rely on implicit structural knowledge, so a
+sentence may name no variable at all.
+
+\subsection{Human-in-the-Loop Verification}
+
+MeetMate~\cite{lawless2024meetmate} is the nearest system to ours. A chat
+interface collects meeting constraints, a model decides whether each can be
+coded, and a code-generating component emits a predicate per constraint;
+candidate times are enumerated and scored by weighted sum. Its evaluation is a
+single-condition technology probe with ten information workers at one company.
+The paper declines to report quantitative outcomes it collected, on the
+grounds that the open-ended conversational design makes them invalid, and it
+reports no baseline, no time on task, and no usability or trust instrument. It
+has no hard constraint notion, treating everything as a weighted preference,
+and no constraint-level review step: participants never saw the constraint
+list, which the authors identify as why they could not troubleshoot the
+system's errors.
+
+VeriPlan~\cite{lee2025veriplan} is the nearest verification interface. Prompt
+constraints are translated into temporal-logic rules, each rule is presented
+back in natural language for the user to confirm, a per-rule slider sets
+enforcement strictness, and a model checker verifies generated plans against
+the confirmed rules. Its four-condition within-subject ablation, including an
+arm with no checker at all, is the design our optional third condition adapts.
+Its measures are perceived usefulness, ease of use and satisfaction; it
+reports no task time, no error count and no trust scale, and its domain is
+personal and everyday planning.
+
+OptiChat~\cite{chen2026optichat} explains optimisation models to non-experts
+and reports descriptions and infeasibility diagnoses in under a minute against
+eighteen to fifty-five minutes for human experts. The comparison is against
+expert effort, not against the effort of the staff who supply the constraints.
+TRACE-CS~\cite{vasileiou2025tracecs} answers contrastive questions about
+course schedules and, like our system, confirms the parsed query with the user
+before acting; its explanation correctness was graded by its authors.
+
+\subsection{Timetabling and Education Administration}
+
+The timetabling literature is dominated by solution methods. Two 2026
+systematic reviews of large language models in education cover teacher
+workload and instructional planning~\cite{feduc2026review} and intelligent
+education systems broadly~\cite{info2026review}; neither reaches timetabling.
+The administrative side has attitude surveys without systems, while the
+constraint-programming and HCI literatures have systems without institutional
+users.
+
+\subsection{Position of This Work}
+
+Table~\ref{tab:position} sets out the elements this study combines against the
+nearest work on each. Every element has a near neighbour. The combination does
+not, and it is the combination that the measurement requires: a corpus written
+by the people the system is for, labelled with agreement; a baseline that is
+the strongest realistic alternative; time split into composing and checking;
+and error measured after verification, which is the only point at which the
+question ``did this help?'' can be asked.
+
+\begin{table}[t]
+  \caption{Elements of this study against the nearest prior work on each.}
+  \label{tab:position}
+  \small
+  \begin{tabular}{@{}p{0.27\linewidth}p{0.36\linewidth}p{0.29\linewidth}@{}}
+    \toprule
+    \textbf{Element} & \textbf{Nearest prior work} & \textbf{This study} \\
+    \midrule
+    Human-authored constraint text
+      & SCHEDBench templates its natural language~\cite{sharma2026schedbench}
+      & Corpus written by staff \\
+    Inter-annotator agreement
+      & Not reported~\cite{lawless2024meetmate,sharma2026schedbench}
+      & Cohen's $\kappa$ on type and strength~\cite{cohen1960kappa} \\
+    Non-LLM baseline
+      & Single-condition probe~\cite{lawless2024meetmate}
+      & Structured form, identical for all \\
+    Measured time
+      & Perceived efficiency~\cite{lee2025veriplan}
+      & Entry and verification timed apart \\
+    Error after verification
+      & Not measured
+      & Pre-registered non-inferiority check \\
+    Trust instrument
+      & Dropped as unreliable~\cite{ipeirotis2026nlidb}
+      & Named in the pre-registration, piloted \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+%% =====================================================================
+\section{System}
+%% =====================================================================
+
+Five components: a data layer holding the department's courses, rooms, slots,
+lecturers and student groups; a constraint schema; a translation component; a
+verification interface; and a solver. Staff text enters at the translation
+component and leaves as constraints. The model is never given a timetable and
+never asked to produce one.
+
+\subsection{Constraint Vocabulary}
+
+The vocabulary is closed and small, because the translation target has to be
+something a model can hit reliably and a person can read back. Eight types are
+solvable: lecturer unavailability, lecturer time preference, a course pinned
+to a named room, a course requiring a type of room, a cap on consecutive
+periods, an earliest acceptable period, a pair of courses that must not
+overlap, and a set of courses to be placed on one day. Every constraint
+carries a strength, hard or soft, a soft weight on a one-to-ten scale, and the
+span of source text it came from.
+
+Two further types stay open and never reach the solver.
+\texttt{unsupported} marks a schedulable request the vocabulary cannot
+express; \texttt{needs\_clarification} marks input too ambiguous to formalise
+and carries the question to put to the user. Both are logged and categorised.
+Their distribution is a finding about what staff ask for, and we report it as
+one, not as a defect rate.
+
+\subsection{Translation}
+
+A system prompt carries the vocabulary, the department's register of entities,
+and sixteen worked examples. The model is asked for JSON, the reply is
+validated against the schema, and a single retry is issued on a validation
+failure with the validation error appended. Three outcomes are never accepted
+as a result: a refusal, a response truncated at the token ceiling, and an API
+error. Each is recorded as that item's outcome and counted.
+
+Provider choice is a parameter. Ten providers sit behind one interface, and a
+run is identified by a provider and model pair. Two provider features that
+would break symmetry are disabled by default: native JSON mode, which the
+reference configuration does not use, and sampling temperature, which the
+models used here do not accept. An instrument that differs between arms
+measures the harness.
+
+\subsection{Entity Resolution}
+\label{sec:resolution}
+
+Staff name entities the way people do. The model copies their wording into the
+entity fields, and resolution against the department register happens
+afterwards, which keeps the output contract simple and makes resolution
+failures measurable on their own.
+
+Resolution records how each reference was matched: by identifier, by full
+name, by a recorded alias, or by token containment. It also records whether
+the reference was \emph{descriptive}, which we define as a reference that
+picks out an entity without naming it: ``the big lab'', ``the first years'',
+``my Tuesday group''. This class is the one LlmAcq found people actually
+produce~\cite{mechqrane2026llmacq}, and it fails differently from a
+hallucinated name: a description resolved to the wrong room is a resolution
+error, while an invented lecturer is a fabrication. We count them separately,
+and report accuracy on descriptive references as its own figure.
+
+\subsection{Flagging}
+
+Flagging is by rule. Self-reported model confidence is not used: it is
+uncalibrated, and the field is present on the schema but neither requested nor
+read, so a calibration study remains a configuration change and not a schema
+change.
+
+A blocking flag keeps a constraint away from the solver until a person
+resolves it: an unresolved entity, an ambiguous entity, an open category, or a
+period outside the configured grid. A review flag surfaces the constraint
+prominently and leaves the decision to the user: a descriptive reference, a
+weak partial match, a strength cue contradicting the parsed strength, or a
+room too small for its course. Verification is mandatory under either.
+
+\subsection{Verification Interface}
+
+Each proposed constraint is shown as a sentence beside the words it came from
+--- ``Dr.\ Sarah Lee cannot teach on Friday: \textsc{hard}'' --- with accept,
+edit and reject controls and a hard/soft toggle. Raw JSON is never shown. A
+participant who cannot read the restatement is not verifying anything, and the
+residual-error measure would then be measuring the interface.
+
+The interface logs every action with a timestamp, and derives durations from
+paired phase spans. Entry time and verification time are therefore separate
+quantities, recorded and reported apart. This is a direct response to
+\cite{ipeirotis2026nlidb}, which bundled composing and checking into one
+completion time and could not separate them.
+
+\subsection{Solver}
+
+Timetables are assignments of courses to a room and a starting slot. Cost is a
+large penalty for each structural or hard elicited violation plus the weighted
+sum of soft violations, with the hard penalty set so that no accumulation of
+soft penalties can purchase a hard breach. Each constraint type contributes a
+violation count, so a timetable breaching one constraint twice scores worse
+than one breaching it once. Search is simulated annealing over three move
+types, seeded and deterministic. The solver is infrastructure here, not a
+contribution; we describe it so the measurements are reproducible.
+
+When the accepted constraints cannot all hold, the solver reports which hard
+constraints were breached, identified by the staff sentence they came from, so
+the conflict can be put back to the person who stated it.
+
+%% =====================================================================
+\section{Study 1: Translation Accuracy}
+\label{sec:study1}
+%% =====================================================================
+
+\subsection{Corpus}
+
+Between 150 and 300 constraint sentences written by university teaching and
+administrative staff. The requirement that they be human-authored is the point
+of the corpus: existing scheduling benchmarks template their natural language,
+and SCHEDBench names human-authored phrasing as what it
+lacks~\cite{sharma2026schedbench}.
+
+\subsection{Labelling}
+
+Two annotators independently label each sentence with the constraint or
+constraints it expresses, using canonical entity identifiers. Agreement is
+reported as Cohen's $\kappa$~\cite{cohen1960kappa} on the type assignment and
+on the strength assignment, with the unit of analysis stated: $\kappa$ requires
+one category per item, so the primary constraint of each sentence supplies the
+label, and the number of sentences carrying more than one constraint is
+reported alongside so the cost of that convention is visible. Set-level exact
+agreement is reported using every constraint. Disagreements are adjudicated to
+a gold label.
+
+\subsection{Measures}
+
+Exact match at the sentence level; type accuracy; hard/soft accuracy
+conditional on a correct type; and entity accuracy, decomposed into correct,
+unresolved, misresolved, missed and spurious, with descriptive references
+counted separately.
+
+Three comparison conventions are fixed in advance. Source-text spans are
+excluded, since annotators disagree about boundaries without disagreeing about
+the reading. Free-prose fields on the two open categories are excluded for the
+same reason. Soft weights are excluded by default, a weight being a scale
+choice and not a reading of the sentence, with a weight-inclusive variant
+reported as a sensitivity analysis.
+
+\subsection{Sensitivity}
+
+Prompt wording, model choice and reasoning effort are varied, with every run
+identified by its model, prompt digest and effort level, and every raw
+response recorded so a scored run can be re-scored without further calls.
+
+%% =====================================================================
+\section{Study 2: Staff Study}
+\label{sec:study2}
+%% =====================================================================
+
+\subsection{Design}
+
+Within-subject, with order counterbalanced across participants. Target sample
+is 25 to 30 university staff who hold timetabling responsibility. The analysis
+plan, the primary outcome and the success thresholds are pre-registered before
+data collection.
+
+\paragraph{Condition 1 (baseline): structured form entry.}
+Dropdowns for lecturer, day, period, room and strength, identical for every
+participant. This is the strongest realistic non-LLM alternative; a comparison
+against an unstructured email baseline would support a weaker claim. Nothing
+in this condition can be misread, so it has no verification phase.
+
+\paragraph{Condition 2: assisted entry.}
+Free text through the translation component, followed by constraint-level
+verification.
+
+\paragraph{Condition 3 (optional): assisted entry without verification.}
+Adapted from VeriPlan's no-checker arm~\cite{lee2025veriplan}, this separates
+the contribution of the verification interface from that of the translation
+component. It is included if the within-subject burden at the target sample
+allows.
+
+\subsection{Tasks}
+
+Each participant expresses a scenario given as a task brief. Briefs are
+presented as shaded week grids, room and equipment inventories, complaint logs
+and email extracts, never as the sentences a participant should produce: a
+brief that states the target sentence would make the study a transcription
+race, in which the free-text arm copies and the form arm transcribes.
+
+Each task carries between six and ten intended constraints. Smaller tasks make
+the residual-error measure too coarse for the margin it has to test: with
+three intended constraints a participant's error rate can only take the values
+$0$, $0.33$, $0.67$ and $1$, a granularity larger than the non-inferiority
+margin itself.
+
+\subsection{Outcomes}
+
+\paragraph{Primary.} Elicitation time per constraint set, assisted against
+baseline, with a target reduction fixed in the pre-registration. Entry time
+and verification time are reported separately and summed to the total.
+
+\paragraph{Secondary: residual error.} Constraint errors remaining after
+verification, scored against the task key, treated as a non-inferiority check
+with an absolute percentage-point margin. The gap between the set a
+participant finally accepted and the set the task asked for decomposes into
+missed, spurious, wrong type, wrong strength, wrong entity and unresolved.
+
+\paragraph{Secondary: throughput.} Correct constraints per minute of staff
+time. Neither of the outcomes above detects a time reduction cancelled by an
+accuracy loss; \cite{ipeirotis2026nlidb} found exactly that pattern, with
+correct output per hour unchanged.
+
+\paragraph{Secondary.} Usability by the System Usability
+Scale~\cite{brooke1996sus}, a trust scale named in the pre-registration,
+perceived acceptability of the resulting timetable, and a short interview.
+
+\subsection{Joint Success Rule}
+
+The claim holds only if the primary target is met and the non-inferiority
+margin is not breached. A pilot sets both thresholds, which are locked before
+pre-registration and reported as absolute margins in percentage points.
+
+\subsection{Analysis}
+
+Paired $t$-test or Wilcoxon signed-rank according to the pre-registered
+decision rule, with effect sizes and confidence intervals. Sessions that were
+abandoned or left with an open phase are excluded from the timing analysis and
+reported as exclusions, since an unclosed phase is closed at the last recorded
+event and would otherwise distort a condition mean without bound.
+
+%% =====================================================================
+\section{Results}
+\label{sec:results}
+%% =====================================================================
+\awaitingdata{Neither study has been run; ethics approval for Study~2 is
+pending. The subsection headings are retained to fix the reporting order.}
+
+\subsection{Translation Accuracy}
+\subsection{Error Categories}
+\subsection{Cross-Model Comparison}
+\subsection{Elicitation Time}
+\subsection{Residual Error}
+\subsection{Throughput}
+\subsection{Trust and Usability}
+
+%% =====================================================================
+\section{Discussion}
+%% =====================================================================
+\awaitingdata{Depends on Section~\ref{sec:results}.}
+
+%% =====================================================================
+\section{Threats to Validity}
+%% =====================================================================
+
+Several threats are structural and can be stated before any data exists.
+
+\paragraph{The baseline is a choice.} A structured form is the strongest
+realistic non-LLM alternative, but it is not the only one. Prior work finds
+that a model suggesting values \emph{into} a structured form cuts completion
+time substantially~\cite{acm2025formcompletion}, and that hybrid is neither of
+our main conditions. We compare free text against a form because that is the
+comparison our research questions ask, and we report the omission.
+
+\paragraph{Verification time is attributable only under a split.} Reporting a
+single elicitation total would leave the central objection untestable. We
+report entry and verification separately for that reason, but the split
+depends on participants moving between interface phases in the way the
+instrument assumes, and a participant who verifies while still composing is
+mismeasured.
+
+\paragraph{Timing is sensitive to deployment.} The primary outcome is a
+duration measured through a browser interface. Remote hosting introduces
+network latency and its variance into the dependent variable, so sessions are
+run locally.
+
+\paragraph{Task keys encode a scoring decision.} Residual error is scored
+against what the task asked for, which means the researcher's reading of the
+brief is the standard. Where a brief admits a defensible alternative
+formalisation, the decision is recorded in the pre-registration, not settled
+once the data arrive.
+
+\paragraph{Open categories are not errors.} A participant who recognises that
+the vocabulary cannot express a request has answered correctly. Treating
+\texttt{unsupported} as a failure would reward forcing requests into
+near-fitting types.
+
+\paragraph{Generality.} One department, one constraint vocabulary, one
+timetabling formulation. The vocabulary was frozen early to keep the
+translation target stable, which bounds what staff could express and is itself
+measured through the open categories.
+
+%% =====================================================================
+\section{Conclusion}
+%% =====================================================================
+\awaitingdata{Depends on Section~\ref{sec:results}.}
+
+%% =====================================================================
+\section*{Availability}
+%% =====================================================================
+
+The system, the prompts with their digests, the labelled corpus with both
+annotators' independent labels and the adjudicated gold, the raw model
+responses, the task keys, and the pre-registration are released. The raw
+responses allow every accuracy figure to be re-scored without access to a
+model provider.
+
+\bibliographystyle{ACM-Reference-Format}
+\bibliography{references}
+
+\end{document}

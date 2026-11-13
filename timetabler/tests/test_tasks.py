@@ -43,7 +43,19 @@ def altered(constraint, **fields):
 
 def test_sample_tasks_load(tasks):
     assert tasks.ids == ["T1", "T2", "T3", "T4"]
-    assert all(t.size >= 1 for t in tasks.tasks)
+
+
+def test_tasks_are_large_enough_for_the_margin(tasks):
+    """A task of 1-3 constraints makes the error rate coarser than the margin.
+
+    With 3 intended constraints a participant's error rate can only land on
+    0, 0.33, 0.67 or 1.0 - a granularity larger than the 5-percentage-point
+    non-inferiority margin the study has to test. Measured across 8 seeds,
+    enlarging the tasks cut the across-seed spread of the mean from
+    0.000-0.178 to 0.058-0.116.
+    """
+    for task in tasks.tasks:
+        assert task.size >= 6, f"{task.id} has only {task.size} constraints"
 
 
 def test_task_keys_resolve_against_the_department(tasks, department):
@@ -87,7 +99,7 @@ def test_the_task_set_exercises_an_open_category(tasks):
 
 def test_perfect_submission_scores_clean(t1, department):
     r = score_session(t1.intended, t1, department)
-    assert (r.correct, r.missed, r.spurious) == (3, 0, 0)
+    assert (r.correct, r.missed, r.spurious) == (t1.size, 0, 0)
     # Regression: with no pred_ids supplied to align(), score_entities found
     # no ids to compare and counted every reference as unresolved, so a
     # perfect submission reported wrong_entity equal to its reference count.
@@ -96,17 +108,18 @@ def test_perfect_submission_scores_clean(t1, department):
 
 
 def test_missing_constraint_counted_as_missed(t1, department):
-    r = score_session(t1.intended[:2], t1, department)
-    assert r.missed == 1 and r.correct == 2
-    assert r.error_rate == pytest.approx(1 / 3)
+    r = score_session(t1.intended[:-1], t1, department)
+    assert r.missed == 1 and r.correct == t1.size - 1
+    assert r.error_rate == pytest.approx(1 / t1.size)
 
 
 def test_wrong_strength_is_its_own_category(t1, department):
     submitted = list(t1.intended)
-    submitted[1] = altered(submitted[1], strength="hard", weight=None)
+    soft_at = next(i for i, c in enumerate(submitted) if c.strength == "soft")
+    submitted[soft_at] = altered(submitted[soft_at], strength="hard", weight=None)
     r = score_session(submitted, t1, department)
     assert r.wrong_strength == 1 and r.wrong_entity == 0
-    assert r.correct == 2
+    assert r.correct == t1.size - 1
 
 
 def test_wrong_entity_is_its_own_category(t1, department):
@@ -121,16 +134,16 @@ def test_invented_constraint_counted_as_spurious(t1, department):
         lecturer="L002", days=["Mon"], strength="hard", source_text="invented"
     )]
     r = score_session(submitted, t1, department)
-    assert r.spurious == 1 and r.correct == 3
+    assert r.spurious == 1 and r.correct == t1.size
 
 
 def test_unresolvable_entity_counted_and_not_crashing(t1, department):
-    submitted = list(t1.intended[:2]) + [LecturerUnavailable(
+    submitted = list(t1.intended[:-1]) + [LecturerUnavailable(
         lecturer="Prof Zhang", days=["Mon"], strength="hard", source_text="x"
     )]
     r = score_session(submitted, t1, department)
     assert r.unresolved == 1
-    assert r.missed == 1, "the third intended constraint is still absent"
+    assert r.missed == 1, "the dropped intended constraint is still absent"
 
 
 def test_empty_submission_scores_everything_missed(t1, department):
@@ -142,7 +155,7 @@ def test_empty_submission_scores_everything_missed(t1, department):
 def test_scoring_accepts_stored_dicts(t1, department):
     """The export passes rows straight from SQLite."""
     as_dicts = [c.model_dump(mode="json") for c in t1.intended]
-    assert score_session(as_dicts, t1, department).correct == 3
+    assert score_session(as_dicts, t1, department).correct == t1.size
 
 
 # -- the synthetic generator --------------------------------------------

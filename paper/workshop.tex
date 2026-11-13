@@ -1,0 +1,243 @@
+%% Article 2 (workshop): the offline half only.
+%%
+%% Target venue: a workshop on LLM-assisted constraint acquisition. CONFIRM
+%% IT IS NON-ARCHIVAL, or permits a later journal version, before submitting:
+%% an archival workshop paper would complicate the main article.
+%%
+%% Build: latexmk -xelatex workshop.tex
+%%
+%% DRAFT STATUS. Results sections carry their heading and nothing else.
+
+\documentclass[sigconf,screen,review,anonymous]{acmart}
+
+\usepackage{booktabs}
+
+\newcommand{\result}[1]{\textbf{[\textsc{result}: #1]}}
+\newcommand{\awaitingdata}[1]{%
+  \par\noindent\textit{[Awaiting data: #1]}\par}
+
+\settopmatter{printacmref=false}
+\setcopyright{none}
+
+\begin{document}
+
+\title{Formalising Staff-Authored Timetabling Constraints}
+\subtitle{A Labelled Corpus and a Cross-Model Accuracy Study}
+
+\author{Anonymous Author(s)}
+\affiliation{%
+  \institution{Anonymous Institution}
+  \country{}
+}
+
+\begin{abstract}
+Benchmarks for turning natural language into formal constraints have grown
+quickly, and scheduling is now among the domains they cover. Their natural
+language, however, is rendered from templates: in the leading scheduling
+benchmark no domain user wrote any of it, and its own limitations section
+names human-authored phrasing as the route to better ecological validity.
+Whether a model that handles templated prose handles an email from a lecturer
+is an open question.
+
+We release a corpus of \result{K} timetabling constraint sentences written by
+university staff, labelled independently by two annotators against a closed
+vocabulary of ten constraint types, with Cohen's $\kappa$ reported on both the
+type and the strength assignment. We measure translation accuracy on it across
+\result{M} models from \result{P} providers under one instrument, decomposing
+errors into type, strength and entity categories, and separating entity
+failures the system could not resolve from those it resolved to the wrong
+entity. We also report the distribution of requests the vocabulary cannot
+express, which is a property of what staff ask for and not a defect rate.
+\end{abstract}
+
+\begin{CCSXML}
+<ccs2012>
+<concept>
+<concept_id>10010147.10010178.10010187</concept_id>
+<concept_desc>Computing methodologies~Knowledge representation and reasoning</concept_desc>
+<concept_significance>500</concept_significance>
+</concept>
+<concept>
+<concept_id>10010147.10010178.10010179.10010182</concept_id>
+<concept_desc>Computing methodologies~Natural language generation</concept_desc>
+<concept_significance>300</concept_significance>
+</concept>
+</ccs2012>
+\end{CCSXML}
+
+\ccsdesc[500]{Computing methodologies~Knowledge representation and reasoning}
+\ccsdesc[300]{Computing methodologies~Natural language generation}
+
+\keywords{constraint acquisition, timetabling, large language models,
+labelled corpus, inter-annotator agreement}
+
+\maketitle
+
+%% =====================================================================
+\section{Introduction}
+%% =====================================================================
+
+Constraint modelling is the bottleneck for wider adoption of constraint
+programming~\cite{michailidis2025cpbench}, and language models are now applied
+to it directly~\cite{shi2025constraintllm,ramamonjison2022nl4opt}. For
+scheduling, SCHEDBench puts six problem families including curriculum
+timetabling to thirteen models and reports that none is invariant to how the
+same problem is worded~\cite{sharma2026schedbench}.
+
+Two properties of that evaluation leave a question open. Its natural language
+comes from a deterministic template pipeline with slot filling, so no domain
+user wrote any of it, and the paper itself names broader human-authored
+phrasing as what it lacks. And it scores end-to-end schedule generation,
+stating that its invariance claims do not isolate effects to the modelling
+stage.
+
+This paper supplies the missing input and isolates the stage. We collected
+timetabling constraint sentences written by university staff, labelled them
+twice, and measured how accurately models map them onto a closed constraint
+vocabulary. No timetable is generated: the model's only output is constraints.
+
+Three contributions:
+
+\begin{itemize}
+  \item A corpus of staff-authored timetabling constraint sentences with two
+        independent label sets and agreement reported. Existing scheduling
+        benchmarks template their language and report no agreement statistic.
+  \item A cross-model, cross-provider accuracy measurement under one
+        instrument, decomposed by error category.
+  \item An error taxonomy grounded in what staff actually wrote, including the
+        class of references that pick out an entity without naming it.
+\end{itemize}
+
+%% =====================================================================
+\section{Corpus}
+%% =====================================================================
+
+\subsection{Collection}
+
+Constraint sentences written by university teaching and administrative staff
+in the course of describing their own timetabling requirements. The brief
+given to contributors asks for requirements, not for sentences in any
+particular form, so the corpus carries the hedging, the implicit references
+and the compound sentences that real requests carry.
+
+\subsection{The Target Vocabulary}
+
+Ten constraint types. Eight are solvable: lecturer unavailability, lecturer
+time preference, a course pinned to a named room, a course requiring a type of
+room, a cap on consecutive periods, an earliest acceptable period, a pair of
+courses that must not overlap, and a set of courses to be placed on one day.
+Each carries a strength, hard or soft.
+
+Two stay open. \texttt{unsupported} marks a schedulable request the vocabulary
+cannot express; \texttt{needs\_clarification} marks input too ambiguous to
+formalise. Neither reaches a solver, and their distribution is reported as a
+finding about what staff ask for.
+
+\subsection{Labelling}
+
+Two annotators independently assign the constraint or constraints each
+sentence expresses, using canonical entity identifiers. Agreement is reported
+as Cohen's $\kappa$~\cite{cohen1960kappa} on the type assignment and on the
+strength assignment. Because $\kappa$ requires one category per item, the
+primary constraint of each sentence supplies the label, and the number of
+sentences carrying more than one constraint is reported so the cost of that
+convention is visible; set-level exact agreement uses every constraint.
+Disagreements are adjudicated to a gold label.
+
+%% =====================================================================
+\section{Measurement}
+%% =====================================================================
+
+\subsection{Pipeline}
+
+A system prompt carries the vocabulary, the department's register of entities
+and sixteen worked examples. The reply is validated against the schema, with a
+single retry on a validation failure. A refusal, a response truncated at the
+token ceiling, and an API error are each recorded as that item's outcome and
+never read as a result.
+
+Entity references are resolved against the register after translation, which
+keeps the output contract simple and makes resolution failures measurable
+separately from translation failures.
+
+\subsection{Measures}
+
+Exact match at the sentence level; type accuracy; hard/soft accuracy
+conditional on a correct type; and entity accuracy decomposed into correct,
+unresolved, misresolved, missed and spurious.
+
+Descriptive references are counted separately. We define a descriptive
+reference as one that picks out an entity without naming it: ``the big lab'',
+``the first years''. LlmAcq found this to be the class people actually
+produce, reporting that users rely on implicit structural knowledge so that a
+sentence may name no variable at all~\cite{mechqrane2026llmacq}. A description
+resolved to the wrong room is a different failure from an invented lecturer,
+and conflating them hides which half of the pipeline is at fault.
+
+\subsection{Comparison Conventions}
+
+Three are fixed in advance. Source-text spans are excluded, since annotators
+disagree about boundaries without disagreeing about the reading. Free-prose
+fields on the two open categories are excluded for the same reason: the thing
+under test is whether the writer recognised that nothing fits, not whether two
+people worded a note alike. Soft weights are excluded by default, a weight
+being a scale choice and not a reading, with a weight-inclusive variant
+reported as a sensitivity analysis.
+
+\subsection{Keeping the Comparison Fair}
+
+Models from several providers sit behind one interface, and a run is
+identified by its provider, model, prompt digest and reasoning effort. Two
+provider features that would break symmetry are disabled: native JSON mode,
+which the reference configuration does not use, and sampling temperature,
+which some of the models do not accept. An instrument that differs between
+arms measures the harness. Every raw response is recorded, so a scored run can
+be re-scored without further calls.
+
+%% =====================================================================
+\section{Results}
+\label{sec:ws-results}
+%% =====================================================================
+\awaitingdata{The corpus has not yet been collected. Subsection headings are
+retained to fix the reporting order.}
+
+\subsection{Agreement}
+\subsection{Translation Accuracy}
+\subsection{Error Categories}
+\subsection{Descriptive References}
+\subsection{Cross-Provider Comparison}
+\subsection{Unsupported and Ambiguous Requests}
+
+%% =====================================================================
+\section{Discussion}
+%% =====================================================================
+\awaitingdata{Depends on Section~\ref{sec:ws-results}.}
+
+%% =====================================================================
+\section{Limitations}
+%% =====================================================================
+
+Two limitations are structural and hold whatever the corpus shows.
+
+\emph{Accuracy is not usefulness.} A translation measured against a gold label
+says nothing about whether a person checking the output ends up better off.
+The closest timed comparison of a natural-language interface against a manual
+alternative found the interface faster and no more accurate, with correct
+output per hour unchanged~\cite{ipeirotis2026nlidb}. That effect is invisible
+to the measurement reported here, and a companion study addresses it.
+
+\emph{One vocabulary, one department.} The target vocabulary was frozen early
+to keep translation stable, which bounds what staff could express. The open
+categories measure that bound instead of hiding it, but a department with
+different scheduling practices would need a different vocabulary, and the
+accuracy figures would not transfer unchanged.
+
+%% =====================================================================
+\section{Conclusion}
+%% =====================================================================
+\awaitingdata{Depends on Section~\ref{sec:ws-results}.}
+
+\bibliographystyle{ACM-Reference-Format}
+\bibliography{references}
+
+\end{document}

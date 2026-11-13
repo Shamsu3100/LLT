@@ -1,16 +1,21 @@
 {
-  "_note": "Starter task keys for the sample department. Replace with tasks written for the real department before the pilot, and run validate_against_department first. Briefs are facts, grids and diary notes, never the sentences the participant should produce.",
+  "_note": "Starter task keys for the sample department. Replace with tasks written for the real department before the pilot, and run validate_against_department first. Briefs are grids, forms, logs and email extracts, never the sentences a participant should produce. Each task carries 7-8 intended constraints: at 1-3 a participant's error rate could only land on 0, 0.33, 0.67 or 1.0, which is coarser than the 5-percentage-point non-inferiority margin.",
   "department": "Sample Department of Computing",
   "tasks": [
     {
       "id": "T1",
-      "title": "A lecturer's own availability",
+      "title": "Your own teaching week",
       "presentation": "grid",
       "brief": [
-        "You are Dr. Sarah Lee (L001).",
-        "Shown as a week grid with cells shaded: all of Friday is shaded.",
-        "Wednesday periods 4, 5 and 6 are shaded in a lighter tone, with a key reading 'would rather avoid'.",
-        "A note on the grid: 'earliest acceptable start: period 2'."
+        "You are Dr. Sarah Lee (L001). You teach CS101 (Introduction to Programming, 45 students) and CS101L (Programming Lab, 45 students).",
+        "WEEK GRID, shaded cells: the whole of Friday is shaded solid.",
+        "Wednesday periods 4, 5 and 6 are shaded in a lighter tone. Key: 'lighter = would rather avoid'.",
+        "Margin note on the grid: 'earliest acceptable start: period 2'.",
+        "Margin note: 'Tuesday and Thursday suit me best'.",
+        "Margin note: 'three periods in a row is my limit - any more and I cannot do it'.",
+        "ROOM BOOKING SLIP, pre-filled: CS101 -> Lecture Theatre 1 (R101). Marked 'confirmed, do not change'.",
+        "EQUIPMENT FORM for CS101L: '45 networked workstations'.",
+        "Post-it on the two course cards: 'same day if you can manage it'."
       ],
       "intended": [
         {
@@ -23,7 +28,7 @@
             "Fri"
           ],
           "periods": null,
-          "source_text": "[task T1] Friday shaded"
+          "source_text": "[task T1] Friday shaded solid"
         },
         {
           "strength": "soft",
@@ -39,7 +44,7 @@
             5,
             6
           ],
-          "source_text": "[task T1] Wednesday afternoon lightly shaded"
+          "source_text": "[task T1] Wednesday afternoon shaded lighter"
         },
         {
           "strength": "soft",
@@ -50,40 +55,75 @@
           "lecturer": "L001",
           "group": null,
           "source_text": "[task T1] earliest start note"
-        }
-      ],
-      "notes": "Shading, not sentences. The hard/soft split is carried by the key ('would rather avoid'), which is the ambiguity Phase 4.3 has to resolve."
-    },
-    {
-      "id": "T2",
-      "title": "Room requirements for a practical",
-      "presentation": "bullet_facts",
-      "brief": [
-        "Course CS202L (Architecture Practical), 38 students, 3 periods.",
-        "Equipment list for the course: 38 networked workstations.",
-        "Room inventory extract: R201 Computer Lab A seats 50; R202 Computer Lab B seats 24; R203 Hardware Lab seats 30.",
-        "Department rule card: a course must not be placed in a room smaller than its cohort."
-      ],
-      "intended": [
+        },
+        {
+          "strength": "soft",
+          "weight": 5,
+          "confidence": null,
+          "type": "lecturer_prefers_time",
+          "lecturer": "L001",
+          "days": [
+            "Tue",
+            "Thu"
+          ],
+          "periods": null,
+          "source_text": "[task T1] Tuesday and Thursday suit me best"
+        },
+        {
+          "strength": "hard",
+          "weight": null,
+          "confidence": null,
+          "type": "max_consecutive_hours",
+          "max_hours": 3,
+          "lecturer": "L001",
+          "group": null,
+          "source_text": "[task T1] three in a row is my limit"
+        },
+        {
+          "strength": "hard",
+          "weight": null,
+          "confidence": null,
+          "type": "course_requires_room",
+          "course": "CS101",
+          "room": "R101",
+          "source_text": "[task T1] booking slip, confirmed"
+        },
         {
           "strength": "hard",
           "weight": null,
           "confidence": null,
           "type": "course_requires_room_type",
-          "course": "CS202L",
+          "course": "CS101L",
           "room_type": "computer_lab",
-          "source_text": "[task T2] workstations required"
+          "source_text": "[task T1] 45 workstations required"
+        },
+        {
+          "strength": "soft",
+          "weight": 3,
+          "confidence": null,
+          "type": "courses_same_day",
+          "courses": [
+            "CS101",
+            "CS101L"
+          ],
+          "source_text": "[task T1] same day if you can manage it"
         }
       ],
-      "notes": "The facts imply a computer lab and rule out R202 and R203 on capacity, so only R201 fits. A participant naming R201 directly scores as spurious against this key; decide before the pilot whether course_requires_room(CS202L, R201) should also count, and record the decision in the pre-registration."
+      "notes": "The hard/soft split is carried by the shading key and by 'cannot' against 'would rather' and 'if you can manage it'. Nothing here is phrased as a constraint sentence."
     },
     {
-      "id": "T3",
-      "title": "Two courses and a cohort",
+      "id": "T2",
+      "title": "Year 2 coordinator",
       "presentation": "diary",
       "brief": [
-        "Diary note from the Year 2 coordinator: 'CS201 and CS202 both belong to G2A. They ended up in the same slot last semester and the students could not attend both.'",
-        "Second note: 'Four periods back to back was too much for them, though we managed.'"
+        "You coordinate Year 2 Group A (G2A, 38 students): CS201 (Data Structures), CS202 (Computer Architecture), CS202L (Architecture Practical, 3 periods).",
+        "COMPLAINTS LOG, last semester: 'CS201 and CS202 fell in the same slot. Students could not attend both. Must not happen again.'",
+        "COMPLAINTS LOG: 'Four periods back to back was too much for them, though we got through it.'",
+        "COMPLAINTS LOG: 'Several asked not to be timetabled in period 1. Would help if we could avoid it.'",
+        "EQUIPMENT FORM for CS202L: '38 networked workstations'.",
+        "ROOM BOOKING SLIP, pre-filled: CS201 -> Lecture Theatre 2 (R102). Marked 'confirmed'.",
+        "Post-it on the CS202 and CS202L cards: 'students prefer these together on one day'.",
+        "LEAVE FORM, Dr. James Okafor (L004): 'unavailable Monday period 1, standing commitment'."
       ],
       "intended": [
         {
@@ -95,7 +135,7 @@
             "CS201",
             "CS202"
           ],
-          "source_text": "[task T3] clashed last semester"
+          "source_text": "[task T2] must not happen again"
         },
         {
           "strength": "soft",
@@ -105,30 +145,268 @@
           "max_hours": 4,
           "lecturer": null,
           "group": "G2A",
-          "source_text": "[task T3] four back to back"
+          "source_text": "[task T2] four back to back"
+        },
+        {
+          "strength": "soft",
+          "weight": 5,
+          "confidence": null,
+          "type": "no_early_start",
+          "earliest_period": 2,
+          "lecturer": null,
+          "group": "G2A",
+          "source_text": "[task T2] asked not to be in period 1"
+        },
+        {
+          "strength": "hard",
+          "weight": null,
+          "confidence": null,
+          "type": "course_requires_room_type",
+          "course": "CS202L",
+          "room_type": "computer_lab",
+          "source_text": "[task T2] 38 workstations required"
+        },
+        {
+          "strength": "hard",
+          "weight": null,
+          "confidence": null,
+          "type": "course_requires_room",
+          "course": "CS201",
+          "room": "R102",
+          "source_text": "[task T2] booking slip, confirmed"
+        },
+        {
+          "strength": "soft",
+          "weight": 3,
+          "confidence": null,
+          "type": "courses_same_day",
+          "courses": [
+            "CS202",
+            "CS202L"
+          ],
+          "source_text": "[task T2] students prefer these together"
+        },
+        {
+          "strength": "hard",
+          "weight": null,
+          "confidence": null,
+          "type": "lecturer_unavailable",
+          "lecturer": "L004",
+          "days": [
+            "Mon"
+          ],
+          "periods": [
+            1
+          ],
+          "source_text": "[task T2] standing commitment"
         }
       ],
-      "notes": "'could not attend' is a hard cue; 'though we managed' marks the second as soft. Tests whether the cue rules survive reported speech."
+      "notes": "Reported speech, so the cue words sit inside quotations. 'Would help' and 'though we got through it' mark the soft ones."
+    },
+    {
+      "id": "T3",
+      "title": "Department administrator",
+      "presentation": "bullet_facts",
+      "brief": [
+        "You are setting the department-wide rules.",
+        "POLICY EXTRACT, clause 4.1: 'No class may be timetabled in period 1. This applies to every course without exception.'",
+        "ROOM INVENTORY: R101 Lecture Theatre 1 seats 120; R102 Lecture Theatre 2 seats 60; R301 Seminar Room 1 seats 30 (seminar).",
+        "ROOM BOOKING SLIP: CS301 (Machine Learning, 25 students) -> R101. Marked 'confirmed'.",
+        "ROOM BOOKING SLIP: CS302 (Final Year Project Seminar, 25 students) -> R301. Marked 'confirmed'.",
+        "ENROLMENT EXTRACT: CS301 and CS302 are both taken by Year 3 Group A (G3A). Registry flag: 'overlap would block attendance'.",
+        "LEAVE FORM, Dr. Mei Tan (L003): 'Fridays, all day, for the whole semester'.",
+        "WORKLOAD NOTE, Prof. Ahmad Rahman (L002): 'contract caps continuous teaching at 3 periods'.",
+        "PREFERENCE FORM, Ms. Priya Nair (L005): ticked 'Tuesday' under 'days I would prefer'.",
+        "TIMETABLER'S NOTE: 'CS101 and CS102 are different cohorts, so an overlap is survivable, but we would rather keep them apart.'"
+      ],
+      "intended": [
+        {
+          "strength": "hard",
+          "weight": null,
+          "confidence": null,
+          "type": "no_early_start",
+          "earliest_period": 2,
+          "lecturer": null,
+          "group": null,
+          "source_text": "[task T3] policy clause 4.1"
+        },
+        {
+          "strength": "hard",
+          "weight": null,
+          "confidence": null,
+          "type": "course_requires_room",
+          "course": "CS301",
+          "room": "R101",
+          "source_text": "[task T3] booking slip CS301"
+        },
+        {
+          "strength": "hard",
+          "weight": null,
+          "confidence": null,
+          "type": "course_requires_room",
+          "course": "CS302",
+          "room": "R301",
+          "source_text": "[task T3] booking slip CS302"
+        },
+        {
+          "strength": "hard",
+          "weight": null,
+          "confidence": null,
+          "type": "courses_not_same_time",
+          "courses": [
+            "CS301",
+            "CS302"
+          ],
+          "source_text": "[task T3] overlap would block attendance"
+        },
+        {
+          "strength": "hard",
+          "weight": null,
+          "confidence": null,
+          "type": "lecturer_unavailable",
+          "lecturer": "L003",
+          "days": [
+            "Fri"
+          ],
+          "periods": null,
+          "source_text": "[task T3] leave form, all Fridays"
+        },
+        {
+          "strength": "hard",
+          "weight": null,
+          "confidence": null,
+          "type": "max_consecutive_hours",
+          "max_hours": 3,
+          "lecturer": "L002",
+          "group": null,
+          "source_text": "[task T3] contract cap"
+        },
+        {
+          "strength": "soft",
+          "weight": 5,
+          "confidence": null,
+          "type": "lecturer_prefers_time",
+          "lecturer": "L005",
+          "days": [
+            "Tue"
+          ],
+          "periods": null,
+          "source_text": "[task T3] preference form"
+        },
+        {
+          "strength": "soft",
+          "weight": 2,
+          "confidence": null,
+          "type": "courses_not_same_time",
+          "courses": [
+            "CS101",
+            "CS102"
+          ],
+          "source_text": "[task T3] survivable but would rather keep apart"
+        }
+      ],
+      "notes": "Tests department-wide scope (both subjects null on no_early_start) and the same type appearing once hard and once soft, which the strength rules have to separate."
     },
     {
       "id": "T4",
-      "title": "A request the schema cannot express",
+      "title": "An email thread",
       "presentation": "bullet_facts",
       "brief": [
-        "Email extract from Ms. Priya Nair (L005): 'Could you keep my teaching to two days a week?'",
-        "Her courses: CS302 only, 1 period."
+        "An email thread has arrived. Work out what can be timetabled.",
+        "Prof. Ahmad Rahman (L002): 'I am on the examinations board every Thursday this semester. I cannot teach then.'",
+        "Ms. Priya Nair (L005): 'Could you keep my teaching to two days a week?'",
+        "Year 1 tutor: 'Please avoid period 6 for the first years (G1A) - they are exhausted by then.'",
+        "Dr. Sarah Lee (L001): 'Mornings suit me best, the first three periods.'",
+        "Registry: 'CS302 is a seminar and needs a seminar room. Any one will do.'",
+        "Year 1 tutor: 'G1A should not sit through more than four periods in a row, ideally.'",
+        "Year 1 tutor: 'CS101 and CS102 on the same day would suit both cohorts, if it works out.'",
+        "Registry: 'No class before period 2 for Year 1 Group B (G1B). Transport arrives late.'"
       ],
       "intended": [
+        {
+          "strength": "hard",
+          "weight": null,
+          "confidence": null,
+          "type": "lecturer_unavailable",
+          "lecturer": "L002",
+          "days": [
+            "Thu"
+          ],
+          "periods": null,
+          "source_text": "[task T4] examinations board"
+        },
         {
           "type": "unsupported",
           "strength": "soft",
           "weight": null,
           "confidence": null,
-          "note": "Caps distinct teaching days per lecturer; no frozen type expresses a count of days.",
+          "note": "Caps the number of distinct teaching days per lecturer. No frozen type expresses a count of days.",
           "source_text": "[task T4] two days a week"
+        },
+        {
+          "type": "unsupported",
+          "strength": "soft",
+          "weight": null,
+          "confidence": null,
+          "note": "Excludes one specific late period. no_early_start sets an earliest period only, so no frozen type expresses this.",
+          "source_text": "[task T4] avoid period 6"
+        },
+        {
+          "strength": "soft",
+          "weight": 5,
+          "confidence": null,
+          "type": "lecturer_prefers_time",
+          "lecturer": "L001",
+          "days": null,
+          "periods": [
+            1,
+            2,
+            3
+          ],
+          "source_text": "[task T4] mornings suit me best"
+        },
+        {
+          "strength": "hard",
+          "weight": null,
+          "confidence": null,
+          "type": "course_requires_room_type",
+          "course": "CS302",
+          "room_type": "seminar",
+          "source_text": "[task T4] needs a seminar room"
+        },
+        {
+          "strength": "soft",
+          "weight": 4,
+          "confidence": null,
+          "type": "max_consecutive_hours",
+          "max_hours": 4,
+          "lecturer": null,
+          "group": "G1A",
+          "source_text": "[task T4] not more than four, ideally"
+        },
+        {
+          "strength": "soft",
+          "weight": 3,
+          "confidence": null,
+          "type": "courses_same_day",
+          "courses": [
+            "CS101",
+            "CS102"
+          ],
+          "source_text": "[task T4] same day would suit, if it works out"
+        },
+        {
+          "strength": "hard",
+          "weight": null,
+          "confidence": null,
+          "type": "no_early_start",
+          "earliest_period": 2,
+          "lecturer": null,
+          "group": "G1B",
+          "source_text": "[task T4] transport arrives late"
         }
       ],
-      "notes": "A control. The correct outcome is to recognise that nothing in the vocabulary fits. A participant who forces it into lecturer_unavailable scores wrong_type, which is the finding, not a failure."
+      "notes": "Two of the eight cannot be expressed in the frozen vocabulary. Recognising that is the correct answer; forcing them into a near-fitting type scores wrong_type, which is the finding. The email voice means cues arrive as 'cannot', 'ideally', 'if it works out' and 'needs'."
     }
   ]
 }

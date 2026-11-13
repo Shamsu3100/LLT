@@ -45,10 +45,15 @@ from ..schema.constraints import ConstraintSet
 from .tasks import Task, load_tasks
 
 #: Plausible shapes, not estimates. Each is a knob the caller should move.
+#:
+#: Rates are **per intended constraint**, so a task of eight takes longer than
+#: a task of three. An absolute per-session total would make the generated
+#: effect depend on which task a participant drew, which is not how the study
+#: behaves.
 DEFAULTS = {
-    "form_entry_seconds": 240.0,
-    "llm_entry_seconds": 90.0,
-    "llm_verification_seconds": 75.0,
+    "form_seconds_per_constraint": 35.0,       # choose type, fill fields, add
+    "llm_entry_seconds_per_constraint": 12.0,  # write a sentence
+    "llm_verify_seconds_per_constraint": 10.0, # read it back, accept or edit
     "participant_spread": 0.35,   # multiplicative, per participant
     "task_spread": 0.15,          # multiplicative, per session
 }
@@ -126,16 +131,18 @@ def generate(
     if not task_set.tasks:
         raise ValueError("task set is empty")
 
-    form_entry = DEFAULTS["form_entry_seconds"]
-    # The LLM arm's total is the form arm's, reduced by the requested effect.
-    llm_total = form_entry * (1.0 - time_reduction)
-    entry_share = DEFAULTS["llm_entry_seconds"] / (
-        DEFAULTS["llm_entry_seconds"] + DEFAULTS["llm_verification_seconds"]
+    form_rate = DEFAULTS["form_seconds_per_constraint"]
+    entry_share = DEFAULTS["llm_entry_seconds_per_constraint"] / (
+        DEFAULTS["llm_entry_seconds_per_constraint"]
+        + DEFAULTS["llm_verify_seconds_per_constraint"]
     )
 
-    stats = {"sessions": 0, "abandoned": 0, "participants": participants}
+    stats: dict[str, Any] = {
+        "sessions": 0, "abandoned": 0, "participants": participants,
+        "tasks": len(task_set.tasks), "intended_total": 0,
+    }
 
-    with StudyStore(path) as store:
+    with StudyStore(path) as store, store.batch():
         for index in range(1, participants + 1):
             pid = f"P{index:02d}"
             speed = 1.0 + rng.gauss(0.0, DEFAULTS["participant_spread"])
@@ -150,17 +157,22 @@ def generate(
                     stats["abandoned"] += 1
                     stats["sessions"] += 1
                     continue
+                # Both arms are sized from the same task, so the effect
+                # is the requested one whichever task was drawn.
+                form_total = form_rate * task.size
                 if arm == "form":
                     _form_session(
                         store, pid, task, department, position, rng, speed,
-                        form_entry, error_rate,
+                        form_total, error_rate,
                     )
                 else:
                     _llm_session(
                         store, pid, task, department, position, rng, speed,
-                        llm_total, entry_share, error_rate,
+                        form_total * (1.0 - time_reduction), entry_share,
+                        error_rate,
                     )
                 stats["sessions"] += 1
+                stats["intended_total"] += task.size
 
     stats["path"] = str(path)
     return stats
@@ -274,6 +286,8 @@ def main(argv: list[str] | None = None) -> int:
           f"{stats['abandoned']} abandoned")
     print(f"  seed {args.seed}, time reduction {args.time_reduction:.0%}, "
           f"error rate {args.error_rate:.0%}")
+    print(f"  {stats['intended_total']} intended constraints scored across "
+          f"{stats['tasks']} task(s)")
     print("\n  This is shape, not evidence: the effect is the one you asked")
     print("  for, so recovering it proves the pipeline runs, nothing more.")
     print(f"\n  python -m timetabler.eval.export_study --db {stats['path']} \\")

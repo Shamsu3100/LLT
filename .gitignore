@@ -40,3 +40,18 @@ Thumbs.db
 
 # Agent/session scratch
 .claude/
+
+# LaTeX build artefacts. The .tex, .bib and .latexmkrc are tracked; the PDFs
+# and intermediates are rebuilt by `latexmk`.
+*.aux
+*.bbl
+*.blg
+*.fdb_latexmk
+*.fls
+*.log
+*.out
+*.synctex.gz
+*.xdv
+*.toc
+paper/*.pdf
+paper/build_*.log

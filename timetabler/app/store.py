@@ -23,10 +23,11 @@ import sqlite3
 import threading
 import time
 import uuid
+from contextlib import contextmanager
 from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
-from typing import Any, Iterable, Sequence
+from typing import Any, Iterable, Iterator, Sequence
 
 SCHEMA_VERSION = 1
 
@@ -169,6 +170,7 @@ class StudyStore:
         self.conn = sqlite3.connect(self.path, check_same_thread=False)
         self.conn.row_factory = sqlite3.Row
         self._lock = threading.RLock()
+        self._deferred = False
         with self._lock:
             self.conn.executescript(SCHEMA)
             self.conn.execute(
@@ -181,10 +183,33 @@ class StudyStore:
         with self._lock:
             self.conn.close()
 
+    @contextmanager
+    def batch(self) -> "Iterator[StudyStore]":
+        """Defer commits until the block exits. **Bulk generation only.**
+
+        A real session commits on every action, so a crash loses at most the
+        current one. That costs an fsync per event, which is irrelevant at
+        human pace and ruinous when writing thousands of synthetic events.
+
+        Not for recording a live session: nothing inside the block is durable
+        until it closes, and an exception rolls the whole block back.
+        """
+        with self._lock:
+            self._deferred = True
+            try:
+                yield self
+                self.conn.commit()
+            except Exception:
+                self.conn.rollback()
+                raise
+            finally:
+                self._deferred = False
+
     def _write(self, sql: str, params: Sequence[Any] = ()) -> None:
         with self._lock:
             self.conn.execute(sql, params)
-            self.conn.commit()
+            if not self._deferred:
+                self.conn.commit()
 
     def _read(self, sql: str, params: Sequence[Any] = ()) -> list[sqlite3.Row]:
         with self._lock:
