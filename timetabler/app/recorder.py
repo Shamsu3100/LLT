@@ -39,6 +39,9 @@ class StudyRecorder:
         self.store = store
         self.participant = participant
         self.condition = str(getattr(condition, "value", condition))
+        #: Which scenario the participant was asked to express. Residual error
+        #: is scored against this task's key (`eval/tasks.py`).
+        self.task_id = task
         self.session_id = store.create_session(
             participant,
             self.condition,

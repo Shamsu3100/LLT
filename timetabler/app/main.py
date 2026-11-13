@@ -40,6 +40,7 @@ from timetabler.parser.client import (
     StubClient,
     make_client,
 )
+from timetabler.eval.tasks import load_tasks
 from timetabler.parser.parse import ConstraintParser
 from timetabler.parser.resolve import EntityResolver, materialise_all
 from timetabler.schema.constraints import OPEN_TYPES, SOFT_WEIGHT_MAX, SOFT_WEIGHT_MIN
@@ -73,6 +74,10 @@ def boot() -> None:
         st.session_state.page = "Input"
         # Held for this process only; never written to the store or disk.
         st.session_state.api_keys = {}
+        try:
+            st.session_state.tasks = load_tasks()
+        except Exception:
+            st.session_state.tasks = None
     st.session_state.credentials = CredentialStore(st.session_state.api_keys)
 
 
@@ -133,6 +138,17 @@ def sidebar() -> None:
             help="Which condition this participant saw first. Counterbalanced "
                  "across participants (Phase 6C).",
         )
+        tasks = st.session_state.get("tasks")
+        task_id = None
+        if tasks is not None:
+            task_id = st.sidebar.selectbox(
+                "Task", tasks.ids,
+                format_func=lambda t: f"{t} - {tasks.by_id(t).title}",
+                help="Which scenario this participant is asked to express. "
+                     "Recorded on the session so residual error can be scored "
+                     "against the task key.",
+            )
+        st.session_state.task_id = task_id
         st.session_state.client_spec = st.sidebar.text_input(
             "Model", value=st.session_state.get("client_spec", "anthropic"),
             help="provider:model — anthropic:claude-sonnet-5-5, openai:<model>, "
@@ -143,6 +159,7 @@ def sidebar() -> None:
             parser = build_parser(st.session_state.client_spec)
             st.session_state.recorder = StudyRecorder(
                 st.session_state.store, participant, condition,
+                task=st.session_state.get("task_id"),
                 department=department(),
                 model=getattr(parser.client, "model", None),
                 prompt_hash=parser.prompt_hash,
@@ -179,12 +196,30 @@ def sidebar() -> None:
 # -- page: input ----------------------------------------------------------
 
 
+def show_brief(active: StudyRecorder) -> None:
+    """The scenario the participant has to express.
+
+    Shown identically in every condition, and written as facts rather
+    than as the sentences we want back: a brief that states the target
+    sentence turns the study into a transcription race.
+    """
+    tasks = st.session_state.get("tasks")
+    task = tasks.by_id(active.task_id) if (tasks and active.task_id) else None
+    if task is None:
+        return
+    with st.expander(f"Task {task.id} - {task.title}", expanded=True):
+        st.caption(f"presented as: {task.presentation}")
+        for line in task.brief:
+            st.write(f"- {line}")
+
+
 def page_input() -> None:
     st.title("Your timetabling constraints")
     active = recorder()
     if active is None:
         st.info("Start a session in the sidebar.")
         return
+    show_brief(active)
 
     if active.condition == Condition.FORM.value:
         form_entry(active)

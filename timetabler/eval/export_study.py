@@ -40,6 +40,8 @@ from typing import Any, Iterable
 from ..app.credentials import assert_no_credentials, redact
 from ..app.store import Decision, EventKind, StudyStore, default_db_path
 from ..app.timing import build_report, decision_counts, throughput
+from ..data import load_department
+from .tasks import load_tasks, score_session, validate_against_department
 
 SESSION_COLUMNS = [
     "session_id", "participant", "condition", "task", "order_index",
@@ -52,6 +54,9 @@ SESSION_COLUMNS = [
     "accepted", "edited", "rejected", "pending", "edit_events",
     "text_submits", "parses_ok", "parses_failed", "strength_toggles",
     "clarifications", "form_adds", "form_removes", "solves",
+    "task_intended", "task_correct", "task_missed", "task_spurious",
+    "task_wrong_type", "task_wrong_strength", "task_wrong_entity",
+    "task_unresolved", "residual_error_rate",
     "correct_constraints", "throughput_per_minute",
 ]
 
@@ -97,7 +102,11 @@ def load_correctness(path: str | None) -> dict[str, int]:
 
 
 def session_rows(
-    store: StudyStore, correctness: dict[str, int], idle_threshold: float
+    store: StudyStore,
+    correctness: dict[str, int],
+    idle_threshold: float,
+    tasks: Any = None,
+    department: Any = None,
 ) -> list[dict[str, Any]]:
     rows: list[dict[str, Any]] = []
     for session in store.sessions():
@@ -107,7 +116,20 @@ def session_rows(
         decisions = decision_counts(records)
         kinds = Counter(e.kind for e in store.events(sid))
 
+        # Residual error against the task key, where one is available.
+        residual = None
+        task = tasks.by_id(session["task"]) if (tasks and session["task"]) else None
+        if task is not None and department is not None:
+            residual = score_session(
+                store.accepted_constraints(sid), task, department
+            )
+
+        # An explicit --correct file wins over the task key, so a researcher
+        # can override a scoring decision without editing the log.
         correct = correctness.get(sid)
+        if correct is None and residual is not None:
+            correct = residual.correct
+
         row: dict[str, Any] = {
             "session_id": sid,
             "participant": session["participant"],
@@ -145,6 +167,28 @@ def session_rows(
         }
         for column, kind in _COUNT_MAP.items():
             row[column] = kinds.get(kind, 0)
+
+        if residual is not None:
+            row.update({
+                "task_intended": residual.intended,
+                "task_correct": residual.correct,
+                "task_missed": residual.missed,
+                "task_spurious": residual.spurious,
+                "task_wrong_type": residual.wrong_type,
+                "task_wrong_strength": residual.wrong_strength,
+                "task_wrong_entity": residual.wrong_entity,
+                "task_unresolved": residual.unresolved,
+                "residual_error_rate": (
+                    round(residual.error_rate, 4)
+                    if residual.error_rate is not None else ""
+                ),
+            })
+        else:
+            for column in ("task_intended", "task_correct", "task_missed",
+                           "task_spurious", "task_wrong_type",
+                           "task_wrong_strength", "task_wrong_entity",
+                           "task_unresolved", "residual_error_rate"):
+                row[column] = ""
         rows.append(row)
     return rows
 
@@ -307,6 +351,12 @@ def main(argv: list[str] | None = None) -> int:
                          f"{default_db_path()})")
     ap.add_argument("--out", default="exports",
                     help="Directory for the CSV files (default: exports)")
+    ap.add_argument("--tasks", default=None,
+                    help="Task-key JSON. Scores residual error against what "
+                         "each task asked for, and fills correctness.")
+    ap.add_argument("--department", default=None,
+                    help="Department JSON, needed to resolve entity names "
+                         "when scoring against a task key.")
     ap.add_argument("--correct", default=None,
                     help="CSV of session_id,correct_constraints to fill the "
                          "throughput column.")
@@ -327,8 +377,24 @@ def main(argv: list[str] | None = None) -> int:
     out = Path(args.out)
     correctness = load_correctness(args.correct)
 
+    tasks = department = None
+    if args.tasks:
+        tasks = load_tasks(args.tasks)
+        department = load_department(args.department)
+        problems = validate_against_department(tasks, department)
+        if problems:
+            # A key naming an entity the department lacks scores every
+            # participant wrong for the researcher's reason, not theirs.
+            sys.exit(
+                "\nTask key does not match the department:\n  "
+                + "\n  ".join(problems)
+                + "\n"
+            )
+
     with StudyStore(db_path) as store:
-        sessions = session_rows(store, correctness, args.idle_threshold)
+        sessions = session_rows(
+            store, correctness, args.idle_threshold, tasks, department
+        )
         n_sessions = write_csv(out / "sessions.csv", SESSION_COLUMNS, sessions)
         n_constraints = write_csv(
             out / "constraints.csv", CONSTRAINT_COLUMNS, constraint_rows(store)

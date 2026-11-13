@@ -1,0 +1,134 @@
+{
+  "_note": "Starter task keys for the sample department. Replace with tasks written for the real department before the pilot, and run validate_against_department first. Briefs are facts, grids and diary notes, never the sentences the participant should produce.",
+  "department": "Sample Department of Computing",
+  "tasks": [
+    {
+      "id": "T1",
+      "title": "A lecturer's own availability",
+      "presentation": "grid",
+      "brief": [
+        "You are Dr. Sarah Lee (L001).",
+        "Shown as a week grid with cells shaded: all of Friday is shaded.",
+        "Wednesday periods 4, 5 and 6 are shaded in a lighter tone, with a key reading 'would rather avoid'.",
+        "A note on the grid: 'earliest acceptable start: period 2'."
+      ],
+      "intended": [
+        {
+          "strength": "hard",
+          "weight": null,
+          "confidence": null,
+          "type": "lecturer_unavailable",
+          "lecturer": "L001",
+          "days": [
+            "Fri"
+          ],
+          "periods": null,
+          "source_text": "[task T1] Friday shaded"
+        },
+        {
+          "strength": "soft",
+          "weight": 4,
+          "confidence": null,
+          "type": "lecturer_unavailable",
+          "lecturer": "L001",
+          "days": [
+            "Wed"
+          ],
+          "periods": [
+            4,
+            5,
+            6
+          ],
+          "source_text": "[task T1] Wednesday afternoon lightly shaded"
+        },
+        {
+          "strength": "soft",
+          "weight": 5,
+          "confidence": null,
+          "type": "no_early_start",
+          "earliest_period": 2,
+          "lecturer": "L001",
+          "group": null,
+          "source_text": "[task T1] earliest start note"
+        }
+      ],
+      "notes": "Shading, not sentences. The hard/soft split is carried by the key ('would rather avoid'), which is the ambiguity Phase 4.3 has to resolve."
+    },
+    {
+      "id": "T2",
+      "title": "Room requirements for a practical",
+      "presentation": "bullet_facts",
+      "brief": [
+        "Course CS202L (Architecture Practical), 38 students, 3 periods.",
+        "Equipment list for the course: 38 networked workstations.",
+        "Room inventory extract: R201 Computer Lab A seats 50; R202 Computer Lab B seats 24; R203 Hardware Lab seats 30.",
+        "Department rule card: a course must not be placed in a room smaller than its cohort."
+      ],
+      "intended": [
+        {
+          "strength": "hard",
+          "weight": null,
+          "confidence": null,
+          "type": "course_requires_room_type",
+          "course": "CS202L",
+          "room_type": "computer_lab",
+          "source_text": "[task T2] workstations required"
+        }
+      ],
+      "notes": "The facts imply a computer lab and rule out R202 and R203 on capacity, so only R201 fits. A participant naming R201 directly scores as spurious against this key; decide before the pilot whether course_requires_room(CS202L, R201) should also count, and record the decision in the pre-registration."
+    },
+    {
+      "id": "T3",
+      "title": "Two courses and a cohort",
+      "presentation": "diary",
+      "brief": [
+        "Diary note from the Year 2 coordinator: 'CS201 and CS202 both belong to G2A. They ended up in the same slot last semester and the students could not attend both.'",
+        "Second note: 'Four periods back to back was too much for them, though we managed.'"
+      ],
+      "intended": [
+        {
+          "strength": "hard",
+          "weight": null,
+          "confidence": null,
+          "type": "courses_not_same_time",
+          "courses": [
+            "CS201",
+            "CS202"
+          ],
+          "source_text": "[task T3] clashed last semester"
+        },
+        {
+          "strength": "soft",
+          "weight": 4,
+          "confidence": null,
+          "type": "max_consecutive_hours",
+          "max_hours": 4,
+          "lecturer": null,
+          "group": "G2A",
+          "source_text": "[task T3] four back to back"
+        }
+      ],
+      "notes": "'could not attend' is a hard cue; 'though we managed' marks the second as soft. Tests whether the cue rules survive reported speech."
+    },
+    {
+      "id": "T4",
+      "title": "A request the schema cannot express",
+      "presentation": "bullet_facts",
+      "brief": [
+        "Email extract from Ms. Priya Nair (L005): 'Could you keep my teaching to two days a week?'",
+        "Her courses: CS302 only, 1 period."
+      ],
+      "intended": [
+        {
+          "type": "unsupported",
+          "strength": "soft",
+          "weight": null,
+          "confidence": null,
+          "note": "Caps distinct teaching days per lecturer; no frozen type expresses a count of days.",
+          "source_text": "[task T4] two days a week"
+        }
+      ],
+      "notes": "A control. The correct outcome is to recognise that nothing in the vocabulary fits. A participant who forces it into lecturer_unavailable scores wrong_type, which is the finding, not a failure."
+    }
+  ]
+}

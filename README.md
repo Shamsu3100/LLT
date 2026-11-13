@@ -81,6 +81,60 @@ scored, and the column is filled.
 An unclosed phase is closed at the last event seen, so a session left open
 overnight would otherwise swamp its condition's mean.
 
+### Task keys
+
+Residual error is the gap between the set a participant finally accepted and
+the set the **task** asked them to express, so each task needs a key of
+intended constraints. `timetabler/eval/labelled/sample_tasks.json` holds four
+starter tasks for the sample department.
+
+```bash
+python -m timetabler.eval.export_study --tasks timetabler/eval/labelled/sample_tasks.json --out exports/
+```
+
+That fills `task_correct`, `task_missed`, `task_spurious`,
+`task_wrong_type`, `task_wrong_strength`, `task_wrong_entity`,
+`task_unresolved` and `residual_error_rate`, and derives throughput from them.
+An explicit `--correct` file still wins, so a scoring decision can be
+overridden without editing the log.
+
+**A brief must be written as facts, not as the sentences you want back.** If a
+task says "You cannot teach on Fridays", the free-text arm copies that sentence
+and the form arm transcribes it, and the study measures typing speed instead of
+elicitation. The starter briefs are shaded grids, inventory extracts and diary
+notes; `presentation` records which, because a brief read aloud and a brief
+shown as a calendar are different instruments. A test asserts no brief line is
+ever a constraint's `source_text`.
+
+Run `validate_against_department` before the pilot. A key naming an entity the
+department does not contain scores every participant wrong for the
+researcher's reason, not theirs — the export refuses to run in that case.
+
+### Synthetic studies
+
+```bash
+python -m timetabler.eval.synth --participants 30 --out logs/synthetic.sqlite
+```
+
+Generates a full within-subject study at the real shape, so the analysis can
+be dry-run before anyone is recruited. **It says nothing about the result** —
+the effect is whatever `--time-reduction` put there, so recovering it is
+circular. Three uses are legitimate:
+
+1. **Pipeline validation** — the columns are right, the exclusion logic fires,
+   the scoring aligns, the export is clean.
+2. **A null check** — `--time-reduction 0`, then confirm the analysis reports
+   no difference. A pipeline that finds an effect in null data is broken.
+3. **A power sanity check** — generate at the target effect and confirm the
+   planned sample can detect it.
+
+It cannot reproduce real between-participant variance (which is what actually
+determines power), which constraints humans misread and why, learning across
+conditions, or the correlation between a participant's speed and accuracy.
+
+It refuses to overwrite an existing log without `--overwrite`, so a real study
+cannot be clobbered by a synthetic run.
+
 The tests:
 
 ```bash
