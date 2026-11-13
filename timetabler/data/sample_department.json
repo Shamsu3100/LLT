@@ -1,0 +1,67 @@
+{
+  "name": "Sample Department of Computing",
+  "_note": "Synthetic fixture for development and tests only. Replace with real or ITC department data (Phase 1.1). Aliases deliberately include the attribute-style descriptions staff actually write, so Phase 4.6 resolution has something to resolve.",
+  "lecturers": [
+    {"id": "L001", "name": "Dr. Sarah Lee", "aliases": ["Lee", "Dr Lee", "Sarah", "S. Lee"]},
+    {"id": "L002", "name": "Prof. Ahmad Rahman", "aliases": ["Rahman", "Prof Rahman", "Ahmad"]},
+    {"id": "L003", "name": "Dr. Mei Tan", "aliases": ["Tan", "Dr Tan", "Mei"]},
+    {"id": "L004", "name": "Dr. James Okafor", "aliases": ["Okafor", "Dr Okafor", "James"]},
+    {"id": "L005", "name": "Ms. Priya Nair", "aliases": ["Nair", "Priya"]}
+  ],
+  "groups": [
+    {"id": "G1A", "name": "Year 1 Group A", "size": 45, "aliases": ["first years", "first-year cohort", "Y1A", "1A"]},
+    {"id": "G1B", "name": "Year 1 Group B", "size": 42, "aliases": ["Y1B", "1B"]},
+    {"id": "G2A", "name": "Year 2 Group A", "size": 38, "aliases": ["second years", "Y2A", "2A"]},
+    {"id": "G3A", "name": "Year 3 Group A", "size": 25, "aliases": ["final years", "finalists", "Y3A", "3A"]}
+  ],
+  "rooms": [
+    {"id": "R101", "name": "Lecture Theatre 1", "capacity": 120, "type": "lecture", "aliases": ["LT1", "the big lecture theatre", "main theatre"]},
+    {"id": "R102", "name": "Lecture Theatre 2", "capacity": 60, "type": "lecture", "aliases": ["LT2", "the small theatre"]},
+    {"id": "R201", "name": "Computer Lab A", "capacity": 50, "type": "computer_lab", "aliases": ["Lab A", "the big lab", "CLA"]},
+    {"id": "R202", "name": "Computer Lab B", "capacity": 24, "type": "computer_lab", "aliases": ["Lab B", "the small lab", "CLB"]},
+    {"id": "R203", "name": "Hardware Lab", "capacity": 30, "type": "lab", "aliases": ["the hardware lab", "electronics lab"]},
+    {"id": "R301", "name": "Seminar Room 1", "capacity": 30, "type": "seminar", "aliases": ["SR1", "seminar room"]}
+  ],
+  "courses": [
+    {"id": "CS101", "name": "Introduction to Programming", "lecturer": "L001", "group": "G1A", "duration": 2, "type": "lecture", "size": 45, "aliases": ["intro programming", "intro to programming", "programming 1"]},
+    {"id": "CS101L", "name": "Programming Lab", "lecturer": "L001", "group": "G1A", "duration": 2, "type": "lab", "size": 45, "aliases": ["the programming lab", "programming practical", "CS101 lab"]},
+    {"id": "CS102", "name": "Discrete Mathematics", "lecturer": "L002", "group": "G1B", "duration": 2, "type": "lecture", "size": 42, "aliases": ["discrete maths", "discrete math"]},
+    {"id": "CS201", "name": "Data Structures", "lecturer": "L003", "group": "G2A", "duration": 2, "type": "lecture", "size": 38, "aliases": ["data structures", "DS"]},
+    {"id": "CS202", "name": "Computer Architecture", "lecturer": "L004", "group": "G2A", "duration": 2, "type": "lecture", "size": 38, "aliases": ["architecture", "comp arch"]},
+    {"id": "CS202L", "name": "Architecture Practical", "lecturer": "L004", "group": "G2A", "duration": 3, "type": "lab", "size": 38, "aliases": ["the architecture practical", "arch lab"]},
+    {"id": "CS301", "name": "Machine Learning", "lecturer": "L003", "group": "G3A", "duration": 2, "type": "lecture", "size": 25, "aliases": ["ML", "machine learning"]},
+    {"id": "CS302", "name": "Final Year Project Seminar", "lecturer": "L005", "group": "G3A", "duration": 1, "type": "seminar", "size": 25, "aliases": ["FYP seminar", "project seminar"]}
+  ],
+  "slots": [
+    {"id": "Mon-1", "day": "Mon", "period": 1},
+    {"id": "Mon-2", "day": "Mon", "period": 2},
+    {"id": "Mon-3", "day": "Mon", "period": 3},
+    {"id": "Mon-4", "day": "Mon", "period": 4},
+    {"id": "Mon-5", "day": "Mon", "period": 5},
+    {"id": "Mon-6", "day": "Mon", "period": 6},
+    {"id": "Tue-1", "day": "Tue", "period": 1},
+    {"id": "Tue-2", "day": "Tue", "period": 2},
+    {"id": "Tue-3", "day": "Tue", "period": 3},
+    {"id": "Tue-4", "day": "Tue", "period": 4},
+    {"id": "Tue-5", "day": "Tue", "period": 5},
+    {"id": "Tue-6", "day": "Tue", "period": 6},
+    {"id": "Wed-1", "day": "Wed", "period": 1},
+    {"id": "Wed-2", "day": "Wed", "period": 2},
+    {"id": "Wed-3", "day": "Wed", "period": 3},
+    {"id": "Wed-4", "day": "Wed", "period": 4},
+    {"id": "Wed-5", "day": "Wed", "period": 5},
+    {"id": "Wed-6", "day": "Wed", "period": 6},
+    {"id": "Thu-1", "day": "Thu", "period": 1},
+    {"id": "Thu-2", "day": "Thu", "period": 2},
+    {"id": "Thu-3", "day": "Thu", "period": 3},
+    {"id": "Thu-4", "day": "Thu", "period": 4},
+    {"id": "Thu-5", "day": "Thu", "period": 5},
+    {"id": "Thu-6", "day": "Thu", "period": 6},
+    {"id": "Fri-1", "day": "Fri", "period": 1},
+    {"id": "Fri-2", "day": "Fri", "period": 2},
+    {"id": "Fri-3", "day": "Fri", "period": 3},
+    {"id": "Fri-4", "day": "Fri", "period": 4},
+    {"id": "Fri-5", "day": "Fri", "period": 5},
+    {"id": "Fri-6", "day": "Fri", "period": 6}
+  ]
+}

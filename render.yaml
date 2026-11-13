@@ -1,0 +1,59 @@
+# Render blueprint for the verification UI.
+#
+# READ THIS BEFORE COLLECTING STUDY DATA.
+#
+# The study log is SQLite on the local filesystem. On Render's free instance
+# type that filesystem is EPHEMERAL: a restart, a redeploy, or a spin-down
+# after idle discards it, and the sessions collected so far are gone. A free
+# instance also sleeps after ~15 minutes of inactivity, so a participant can
+# meet a cold start mid-task, which corrupts the time measurement that is the
+# study's primary outcome.
+#
+# So:
+#   - Free instance  -> demos and walkthroughs only.
+#   - Real sessions  -> a paid instance with the persistent disk below, which
+#                       is why TIMETABLER_DB points into /data.
+#
+# Participant data on a third-party host also has to be named in the ethics
+# application, with the provider's retention terms (build plan §5, Privacy).
+
+services:
+  - type: web
+    name: timetabler-verification-ui
+    runtime: python
+    plan: starter          # 'free' has no persistent disk; see the note above
+    region: singapore      # move this to the region nearest participants
+    branch: main
+
+    buildCommand: pip install -r requirements.txt
+
+    # Streamlit must bind the port Render supplies and listen on all
+    # interfaces, or the health check never passes.
+    startCommand: >-
+      streamlit run timetabler/app/main.py
+      --server.port $PORT
+      --server.address 0.0.0.0
+      --server.headless true
+      --browser.gatherUsageStats false
+
+    healthCheckPath: /_stcore/health
+
+    disk:
+      name: study-data
+      mountPath: /data
+      sizeGB: 1
+
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.11.9"
+      # Keeps the study log on the persistent disk above.
+      - key: TIMETABLER_DB
+        value: /data/study.sqlite
+      # Set these in the Render dashboard, never in this file. A credential
+      # committed to a public repository is a leaked credential.
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: DEEPSEEK_API_KEY
+        sync: false

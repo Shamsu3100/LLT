@@ -1,0 +1,42 @@
+# Study data. NEVER commit: a real session log holds participant data, and
+# this repository is public (build plan §5, Privacy; ethics approval).
+logs/
+*.sqlite
+*.sqlite3
+*.db
+runs/
+exports/
+
+# Credentials. The app holds them in memory only, but keep local files out
+# regardless.
+.env
+.env.*
+*.key
+secrets.toml
+.streamlit/secrets.toml
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.venv/
+venv/
+env/
+
+# Tooling
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Editors and OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Agent/session scratch
+.claude/

@@ -1,0 +1,17 @@
+# Build plan §2. Python 3.11+.
+pydantic>=2.0
+
+# Analysis for the study (Phase 6).
+pandas>=2.0
+scipy>=1.11
+scikit-learn>=1.3        # Cohen's kappa; metrics.py falls back without it
+
+# Verification UI and study logging (Phase 5).
+streamlit>=1.30
+
+# Live LLM calls (Phase 4). Optional: the parser runs offline with StubClient.
+# 2.x removed the sampling parameters; the client passes no temperature.
+anthropic>=2.0
+
+# Tests.
+pytest>=8.0
