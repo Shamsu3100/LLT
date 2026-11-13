@@ -39,6 +39,48 @@ The solver:
 python -m timetabler.solver.run --iterations 40000 --restarts 3
 ```
 
+## Collecting study data
+
+Point the log somewhere fixed, so it does not depend on the launch directory:
+
+```bash
+export TIMETABLER_DB=~/llt-study/study.sqlite
+```
+
+Run one session per participant per condition. Set the participant code,
+condition and order position in the sidebar, click **Start session**, work
+through Input, Review and Result, then **Finish session**. Every action is
+timestamped into that one file as it happens, so a crash loses at most the
+current phase. Counterbalancing is yours to fix in advance: the app records
+the order position you enter, it does not assign one.
+
+Back up after each participant - it is a single file:
+
+```bash
+cp ~/llt-study/study.sqlite ~/llt-study/backups/after-P01.sqlite
+```
+
+Export to tidy CSV for analysis:
+
+```bash
+python -m timetabler.eval.export_study --out exports/
+```
+
+That writes `sessions.csv` (one row per participant-condition, with entry
+time, verification time and total as separate columns), `constraints.csv`
+(one row per constraint, with what was proposed, what was decided, and what
+changed), and `events.csv` (the full log). It prints a per-condition summary
+and names any session that was abandoned or left with an open phase.
+
+Throughput needs correctness, which this repository cannot score: participants
+write their own sentences, so the Phase 6A labelled set is a different corpus.
+Supply `--correct session_id,correct_constraints` once residual error is
+scored, and the column is filled.
+
+**Abandoned sessions are excluded from the printed means but kept in the CSV.**
+An unclosed phase is closed at the last event seen, so a session left open
+overnight would otherwise swamp its condition's mean.
+
 The tests:
 
 ```bash
